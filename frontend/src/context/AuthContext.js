@@ -11,7 +11,11 @@ export const useAuth = () => {
   return context;
 };
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// IMPORTANT: API base WITHOUT trailing slash issues
+const API_URL =
+  process.env.REACT_APP_API_URL
+    ? `${process.env.REACT_APP_API_URL}/api`
+    : 'http://localhost:5000/api';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -19,12 +23,10 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up axios interceptor for 401 errors
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // Token is invalid or expired
           localStorage.removeItem('token');
           setToken(null);
           setUser(null);
@@ -39,9 +41,9 @@ export const AuthProvider = ({ children }) => {
     } else {
       delete axios.defaults.headers.common['Authorization'];
     }
+
     setLoading(false);
 
-    // Cleanup interceptor on unmount
     return () => {
       axios.interceptors.response.eject(interceptor);
     };
@@ -51,12 +53,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       const { token: newToken, user: userData } = response.data;
-      
+
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      
+
       return { success: true };
     } catch (error) {
       return {
@@ -74,12 +76,12 @@ export const AuthProvider = ({ children }) => {
         password
       });
       const { token: newToken, user: userData } = response.data;
-      
+
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      
+
       return { success: true };
     } catch (error) {
       return {
